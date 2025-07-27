@@ -4,20 +4,30 @@ type TokenType int
 
 const (
 	TokenEOF TokenType = iota
+	// braces, parentheses
 	TokenLeftParen
 	TokenRightParen
 	TokenLeftBrace
 	TokenRightBrace
-	TokenNewLine
+	// punctuation
 	TokenComma
 	TokenDot
+	TokenSemiColon
+	// mathematical operators
 	TokenMinus
 	TokenPlus
 	TokenEqual
+	TokenBangEqual
 	TokenEqualEqual
-	TokenSemiColon
+	TokenLess
+	TokenLessEqual
+	TokenGreater
+	TokenGreaterEqual
+	// misc
 	TokenSlash
 	TokenStar
+	TokenBang
+	TokenNewLine
 )
 
 func (t TokenType) ToString() string {
@@ -52,6 +62,18 @@ func (t TokenType) ToString() string {
 		return "EQUAL"
 	case TokenEqualEqual:
 		return "EQUAL_EQUAL"
+	case TokenBang:
+		return "BANG"
+	case TokenBangEqual:
+		return "BANG_EQUAL"
+	case TokenLess:
+		return "LESS"
+	case TokenLessEqual:
+		return "LESS_EQUAL"
+	case TokenGreater:
+		return "GREATER"
+	case TokenGreaterEqual:
+		return "GREATER_EQUAL"
 	default:
 		return ""
 	}

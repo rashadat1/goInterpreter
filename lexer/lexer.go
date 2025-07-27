@@ -78,15 +78,15 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 		}, nil, nil
 	case '=':
 		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenEqual,
+				Lexeme:  "=",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
 		if err != nil {
-			if err == io.EOF {
-				return Token{
-					Type:    TokenEqual,
-					Lexeme:  "=",
-					Literal: "null",
-					Line:    l.Line,
-				}, nil, nil
-			}
 			return Token{}, nil, err
 		}
 		switch cn {
@@ -105,6 +105,105 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 			return Token{
 				Type:    TokenEqual,
 				Lexeme:  "=",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+	case '!':
+		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenBang,
+				Lexeme:  "!",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+		if err != nil {
+			return Token{}, nil, err
+		}
+		switch cn {
+		case '=':
+			return Token{
+				Type:    TokenBangEqual,
+				Lexeme:  "!=",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		default:
+			err := r.UnreadRune()
+			if err != nil {
+				return Token{}, nil, err
+			}
+			return Token{
+				Type:    TokenBang,
+				Lexeme:  "!",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+	case '<':
+		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenLess,
+				Lexeme:  "<",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+		if err != nil {
+			return Token{}, nil, err
+		}
+		switch cn {
+		case '=':
+			return Token{
+				Type:    TokenLessEqual,
+				Lexeme:  "<=",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		default:
+			err := r.UnreadRune()
+			if err != nil {
+				return Token{}, nil, err
+			}
+			return Token{
+				Type:    TokenLess,
+				Lexeme:  "<",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+	case '>':
+		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenGreater,
+				Lexeme:  ">",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+		if err != nil {
+			return Token{}, nil, err
+		}
+		switch cn {
+		case '=':
+			return Token{
+				Type:    TokenGreaterEqual,
+				Lexeme:  ">=",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		default:
+			err := r.UnreadRune()
+			if err != nil {
+				return Token{}, nil, err
+			}
+			return Token{
+				Type:    TokenGreater,
+				Lexeme:  ">",
 				Literal: "null",
 				Line:    l.Line,
 			}, nil, nil
