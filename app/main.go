@@ -15,7 +15,16 @@ const (
 	TokenEOF TokenType = iota
 	TokenLeftParen
 	TokenRightParen
+	TokenLeftBrace
+	TokenRightBrace
 	TokenNewLine
+	TokenComma
+	TokenDot
+	TokenMinus
+	TokenPlus
+	TokenSemiColon
+	TokenSlash
+	TokenStar
 )
 
 type TokenizedText []Token
@@ -30,6 +39,24 @@ func (t TokenType) toString() string {
 		return "RIGHT_PAREN"
 	case TokenNewLine:
 		return "NEW_LINE"
+	case TokenLeftBrace:
+		return "LEFT_BRACE"
+	case TokenRightBrace:
+		return "RIGHT_BRACE"
+	case TokenComma:
+		return "COMMA"
+	case TokenDot:
+		return "DOT"
+	case TokenMinus:
+		return "MINUS"
+	case TokenPlus:
+		return "PLUS"
+	case TokenSemiColon:
+		return "SEMICOLON"
+	case TokenSlash:
+		return "SLASH"
+	case TokenStar:
+		return "STAR"
 	default:
 		return ""
 	}
@@ -83,6 +110,7 @@ func (l *Lexer) NextToken() (Token, error) {
 		return Token{}, err
 	}
 	switch c {
+	// single-char tokens
 	case '(':
 		return Token{
 			Type:    TokenLeftParen,
@@ -94,6 +122,69 @@ func (l *Lexer) NextToken() (Token, error) {
 		return Token{
 			Type:    TokenRightParen,
 			Lexeme:  ")",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '{':
+		return Token{
+			Type:    TokenLeftBrace,
+			Lexeme:  "{",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '}':
+		return Token{
+			Type:    TokenRightBrace,
+			Lexeme:  "}",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case ',':
+		return Token{
+			Type:    TokenComma,
+			Lexeme:  ",",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '.':
+		return Token{
+			Type:    TokenDot,
+			Lexeme:  ".",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '-':
+		return Token{
+			Type:    TokenMinus,
+			Lexeme:  "-",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '+':
+		return Token{
+			Type:    TokenPlus,
+			Lexeme:  "+",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case ';':
+		return Token{
+			Type:    TokenSemiColon,
+			Lexeme:  ";",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '/':
+		return Token{
+			Type:    TokenSlash,
+			Lexeme:  "/",
+			Literal: "null",
+			Line:    l.line,
+		}, nil
+	case '*':
+		return Token{
+			Type:    TokenStar,
+			Lexeme:  "*",
 			Literal: "null",
 			Line:    l.line,
 		}, nil
