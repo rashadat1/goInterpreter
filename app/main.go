@@ -3,13 +3,26 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 )
 
 type TokenType int
+
+type TokenError interface {
+	FormatMessage() string
+}
+type UnrecognizedCharError struct {
+	Message string
+	Char    string
+	Line    int
+}
+
+func (uc UnrecognizedCharError) FormatMessage() string {
+	return fmt.Sprintf("[line %s] Error: Unexpected character: %s\n", strconv.Itoa(uc.Line), uc.Char)
+}
 
 const (
 	TokenEOF TokenType = iota
@@ -28,6 +41,7 @@ const (
 )
 
 type TokenizedText []Token
+type TokenErrors []TokenError
 
 func (t TokenType) toString() string {
 	switch t {
@@ -76,6 +90,14 @@ func (tt TokenizedText) toString() string {
 	return out
 }
 
+func (te TokenErrors) toString() string {
+	out := ""
+	for _, tokErr := range te {
+		out += tokErr.FormatMessage()
+	}
+	return out
+}
+
 type Token struct {
 	Type    TokenType
 	Lexeme  string
@@ -99,15 +121,16 @@ func (t *Token) TokToString() string {
 type Lexer struct {
 	reader *bytes.Reader
 	line   int
+	lexErr TokenErrors
 	//lexeme bytes.Buffer
 }
 
 // Emit a Token by reading the next rune from the bytes.Reader object stored in Lexer
-func (l *Lexer) NextToken() (Token, error) {
+func (l *Lexer) NextToken() (Token, TokenError, error) {
 	r := l.reader
 	c, _, err := r.ReadRune()
 	if err != nil {
-		return Token{}, err
+		return Token{}, nil, err
 	}
 	switch c {
 	// single-char tokens
@@ -117,97 +140,106 @@ func (l *Lexer) NextToken() (Token, error) {
 			Lexeme:  "(",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case ')':
 		return Token{
 			Type:    TokenRightParen,
 			Lexeme:  ")",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '{':
 		return Token{
 			Type:    TokenLeftBrace,
 			Lexeme:  "{",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '}':
 		return Token{
 			Type:    TokenRightBrace,
 			Lexeme:  "}",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case ',':
 		return Token{
 			Type:    TokenComma,
 			Lexeme:  ",",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '.':
 		return Token{
 			Type:    TokenDot,
 			Lexeme:  ".",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '-':
 		return Token{
 			Type:    TokenMinus,
 			Lexeme:  "-",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '+':
 		return Token{
 			Type:    TokenPlus,
 			Lexeme:  "+",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case ';':
 		return Token{
 			Type:    TokenSemiColon,
 			Lexeme:  ";",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '/':
 		return Token{
 			Type:    TokenSlash,
 			Lexeme:  "/",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '*':
 		return Token{
 			Type:    TokenStar,
 			Lexeme:  "*",
 			Literal: "null",
 			Line:    l.line,
-		}, nil
+		}, nil, nil
 	case '\n':
 		l.line += 1
 		return Token{
 			Type: TokenNewLine,
-		}, nil
+		}, nil, nil
 	default:
-		err := errors.New("Token not implemented: " + string(c))
-		return Token{}, err
+		uc := UnrecognizedCharError{
+			Char: string(c),
+			Line: l.line,
+		}
+		uc.Message = uc.FormatMessage()
+		return Token{}, uc, nil
 	}
 }
 
-func (l *Lexer) ScanTokens() (TokenizedText, error) {
+func (l *Lexer) ScanTokens() (TokenizedText, TokenErrors, error) {
 	toks := make(TokenizedText, 0)
+	tokErrs := make(TokenErrors, 0)
 	for {
-		tok, err := l.NextToken()
+		tok, tokErr, err := l.NextToken()
 		if err != nil {
 			if err == io.EOF {
-				return toks, nil
+				return toks, tokErrs, nil
 			}
-			return nil, err
+			return nil, nil, err
+		}
+		if tokErr != nil {
+			tokErrs = append(tokErrs, tokErr)
+			continue
 		}
 		if tok.Type.toString() != "NEW_LINE" {
 			toks = append(toks, tok)
@@ -243,7 +275,10 @@ func main() {
 			reader: r,
 			line:   1,
 		}
-		run(lex)
+		run(&lex)
+		if len(lex.lexErr) != 0 {
+			os.Exit(65)
+		}
 		os.Exit(0)
 	} else {
 		fmt.Println("EOF  null")
@@ -272,16 +307,21 @@ func replEcho() {
 			reader: r,
 			line:   1,
 		}
-		run(lex)
+		run(&lex)
 		fmt.Printf("Input code: %s\n", line)
 	}
 }
 
-func run(r Lexer) {
-	toks, err := r.ScanTokens()
+func run(lex *Lexer) {
+	res := ""
+	resErr := ""
+	toks, tokErrs, err := lex.ScanTokens()
+	lex.lexErr = tokErrs
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error occurred processing tokens: %s", err.Error())
 	}
-	res := toks.toString()
+	res = toks.toString()
+	resErr = tokErrs.toString()
 	fmt.Print(res)
+	fmt.Fprint(os.Stderr, resErr)
 }
