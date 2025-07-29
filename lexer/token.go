@@ -27,7 +27,9 @@ const (
 	TokenSlash
 	TokenStar
 	TokenBang
-	TokenNewLine
+	// literals
+	TokenStringLiteral
+	TokenNumberLiteral
 )
 
 func (t TokenType) ToString() string {
@@ -38,8 +40,6 @@ func (t TokenType) ToString() string {
 		return "LEFT_PAREN"
 	case TokenRightParen:
 		return "RIGHT_PAREN"
-	case TokenNewLine:
-		return "NEW_LINE"
 	case TokenLeftBrace:
 		return "LEFT_BRACE"
 	case TokenRightBrace:
@@ -74,6 +74,10 @@ func (t TokenType) ToString() string {
 		return "GREATER"
 	case TokenGreaterEqual:
 		return "GREATER_EQUAL"
+	case TokenStringLiteral:
+		return "STRING"
+	case TokenNumberLiteral:
+		return "NUMBER"
 	default:
 		return ""
 	}

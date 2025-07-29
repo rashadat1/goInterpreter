@@ -32,10 +32,10 @@ func main() {
 	}
 	if len(fileContents) > 0 {
 		r := bytes.NewReader(fileContents)
-
 		lex := lexer.Lexer{
 			Reader: r,
 			Line:   1,
+			Lexeme: bytes.NewBuffer(nil),
 		}
 		runRes := runner.Run(&lex)
 		fmt.Print(runRes.Tokens)
@@ -67,6 +67,7 @@ func replEcho() {
 		lex := lexer.Lexer{
 			Reader: r,
 			Line:   1,
+			Lexeme: bytes.NewBuffer(nil),
 		}
 		runRes := runner.Run(&lex)
 		fmt.Print(runRes.Tokens)

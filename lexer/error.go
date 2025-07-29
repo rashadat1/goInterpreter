@@ -14,9 +14,17 @@ type UnrecognizedCharError struct {
 	Char    string
 	Line    int
 }
+type UnterminatedStringError struct {
+	Message string
+	Line    int
+}
 
 func (uc UnrecognizedCharError) FormatMessage() string {
 	return fmt.Sprintf("[line %s] Error: Unexpected character: %s\n", strconv.Itoa(uc.Line), uc.Char)
+}
+
+func (us UnterminatedStringError) FormatMessage() string {
+	return fmt.Sprintf("[line %s] Error: Unterminated string.", strconv.Itoa(us.Line))
 }
 
 type TokenErrors []TokenError

@@ -3,12 +3,15 @@ package lexer
 import (
 	"bytes"
 	"io"
+	"strconv"
+	"strings"
+	"unicode"
 )
 
 type Lexer struct {
 	Reader *bytes.Reader
 	Line   int
-	//lexeme bytes.Buffer
+	Lexeme *bytes.Buffer
 }
 
 // Emit a Token by reading the next rune from the bytes.Reader object stored in Lexer
@@ -18,65 +21,65 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 	if err != nil {
 		return Token{}, nil, err
 	}
-	switch c {
+	switch {
 	// single-char tokens
-	case '(':
+	case c == '(':
 		return Token{
 			Type:    TokenLeftParen,
 			Lexeme:  "(",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case ')':
+	case c == ')':
 		return Token{
 			Type:    TokenRightParen,
 			Lexeme:  ")",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '{':
+	case c == '{':
 		return Token{
 			Type:    TokenLeftBrace,
 			Lexeme:  "{",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '}':
+	case c == '}':
 		return Token{
 			Type:    TokenRightBrace,
 			Lexeme:  "}",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case ',':
+	case c == ',':
 		return Token{
 			Type:    TokenComma,
 			Lexeme:  ",",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '.':
+	case c == '.':
 		return Token{
 			Type:    TokenDot,
 			Lexeme:  ".",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '-':
+	case c == '-':
 		return Token{
 			Type:    TokenMinus,
 			Lexeme:  "-",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '+':
+	case c == '+':
 		return Token{
 			Type:    TokenPlus,
 			Lexeme:  "+",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '=':
+	case c == '=':
 		cn, _, err := r.ReadRune()
 		if err == io.EOF {
 			return Token{
@@ -109,7 +112,7 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				Line:    l.Line,
 			}, nil, nil
 		}
-	case '!':
+	case c == '!':
 		cn, _, err := r.ReadRune()
 		if err == io.EOF {
 			return Token{
@@ -142,7 +145,7 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				Line:    l.Line,
 			}, nil, nil
 		}
-	case '<':
+	case c == '<':
 		cn, _, err := r.ReadRune()
 		if err == io.EOF {
 			return Token{
@@ -175,7 +178,7 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				Line:    l.Line,
 			}, nil, nil
 		}
-	case '>':
+	case c == '>':
 		cn, _, err := r.ReadRune()
 		if err == io.EOF {
 			return Token{
@@ -208,14 +211,14 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				Line:    l.Line,
 			}, nil, nil
 		}
-	case ';':
+	case c == ';':
 		return Token{
 			Type:    TokenSemiColon,
 			Lexeme:  ";",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '/':
+	case c == '/':
 		cn, _, err := r.ReadRune()
 		if err == io.EOF {
 			return Token{
@@ -258,18 +261,115 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 			}, nil, nil
 		}
 
-	case '*':
+	case c == '*':
 		return Token{
 			Type:    TokenStar,
 			Lexeme:  "*",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case '\n':
+	case c == '\n':
 		l.Line += 1
-		return Token{
-			Type: TokenNewLine,
-		}, nil, nil
+		return l.NextToken()
+	case c == ' ':
+		return l.NextToken()
+	case c == '\t':
+		return l.NextToken()
+	case c == '\r':
+		return l.NextToken()
+	case c == '"':
+		l.Lexeme.Reset()
+		l.Lexeme.WriteByte('"')
+		for {
+			nxt, _, err := r.ReadRune()
+			if err == io.EOF {
+				// if we reach the end of the file before terminating the string with '"'
+				us := UnterminatedStringError{
+					Line: l.Line,
+				}
+				us.Message = us.FormatMessage()
+				return Token{}, us, nil
+			}
+			if err != nil {
+				return Token{}, nil, err
+			}
+			_, err = l.Lexeme.WriteRune(nxt)
+			if err != nil {
+				return Token{}, nil, err
+			}
+			if nxt == '\n' {
+				l.Line++
+			}
+			if nxt == '"' {
+				// we have reached the end of the string literal
+				bufBytes := l.Lexeme.Bytes()
+				lexeme := string(bufBytes)
+				return Token{
+					Type:    TokenStringLiteral,
+					Lexeme:  lexeme,
+					Literal: strings.Trim(lexeme, "\""),
+					Line:    l.Line,
+				}, nil, nil
+			}
+		}
+	case unicode.IsDigit(c):
+		hasDot := false
+		l.Lexeme.Reset()
+		_, err := l.Lexeme.WriteRune(c)
+		if err != nil {
+			return Token{}, nil, err
+		}
+		for {
+			nxt, _, err := r.ReadRune()
+			if err == io.EOF {
+				strNum := l.Lexeme.String()
+				parsedFloat, err := strconv.ParseFloat(strNum, 64)
+				if err != nil {
+					return Token{}, nil, err
+				}
+				literal := strconv.FormatFloat(parsedFloat, 'f', -1, 64)
+				if !strings.Contains(literal, ".") {
+					literal += ".0"
+				}
+				return Token{
+					Type:    TokenNumberLiteral,
+					Lexeme:  strNum,
+					Literal: literal,
+					Line:    l.Line,
+				}, nil, nil
+			}
+			if err != nil {
+				return Token{}, nil, err
+			}
+			if !(unicode.IsDigit(nxt) || nxt == '.' && !hasDot) {
+				err = r.UnreadRune()
+				if err != nil {
+					return Token{}, nil, err
+				}
+				strNum := l.Lexeme.String()
+				parsedFloat, err := strconv.ParseFloat(strNum, 64)
+				if err != nil {
+					return Token{}, nil, err
+				}
+				literal := strconv.FormatFloat(parsedFloat, 'f', -1, 64)
+				if !strings.Contains(literal, ".") {
+					literal += ".0"
+				}
+				return Token{
+					Type:    TokenNumberLiteral,
+					Lexeme:  strNum,
+					Literal: literal,
+					Line:    l.Line,
+				}, nil, nil
+			}
+			_, err = l.Lexeme.WriteRune(nxt)
+			if err != nil {
+				return Token{}, nil, err
+			}
+			if nxt == '.' {
+				hasDot = true
+			}
+		}
 	default:
 		uc := UnrecognizedCharError{
 			Char: string(c),
@@ -295,8 +395,6 @@ func (l *Lexer) ScanTokens() (TokenizedText, TokenErrors, error) {
 			tokErrs = append(tokErrs, tokErr)
 			continue
 		}
-		if tok.Type.ToString() != "NEW_LINE" {
-			toks = append(toks, tok)
-		}
+		toks = append(toks, tok)
 	}
 }
