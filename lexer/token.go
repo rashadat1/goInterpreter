@@ -96,6 +96,9 @@ func LiteralToString(lit interface{}) string {
 }
 
 func (t *Token) TokToString() string {
+	if t.Type.ToString() == "" {
+		return ""
+	}
 	return t.Type.ToString() + " " + t.Lexeme + " " + LiteralToString(t.Literal) + string('\n')
 }
 

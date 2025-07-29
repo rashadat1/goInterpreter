@@ -216,12 +216,48 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 			Line:    l.Line,
 		}, nil, nil
 	case '/':
-		return Token{
-			Type:    TokenSlash,
-			Lexeme:  "/",
-			Literal: "null",
-			Line:    l.Line,
-		}, nil, nil
+		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenSlash,
+				Lexeme:  "/",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+		if err != nil {
+			return Token{}, nil, err
+		}
+		switch cn {
+		case '/':
+			// single-line comment
+			for {
+				// consume until '\n' or EOF
+				nxt, _, err := r.ReadRune()
+				if nxt == '\n' {
+					// if end of line
+					l.Line++
+					return l.NextToken()
+				}
+				if err != nil {
+					// or err occurs including io.EOF -> don't yield any tokens because
+					// we were in a comment state
+					return Token{}, nil, err
+				}
+			}
+		default:
+			err := r.UnreadRune()
+			if err != nil {
+				return Token{}, nil, err
+			}
+			return Token{
+				Type:    TokenSlash,
+				Lexeme:  "/",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+
 	case '*':
 		return Token{
 			Type:    TokenStar,
