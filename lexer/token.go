@@ -27,9 +27,27 @@ const (
 	TokenSlash
 	TokenStar
 	TokenBang
+	TokenIdentifier
 	// literals
 	TokenStringLiteral
 	TokenNumberLiteral
+	// keywords
+	TokenAnd
+	TokenClass
+	TokenElse
+	TokenFalse
+	TokenFor
+	TokenFun
+	TokenIf
+	TokenNil
+	TokenOr
+	TokenPrint
+	TokenReturn
+	TokenSuper
+	TokenThis
+	TokenTrue
+	TokenVar
+	TokenWhile
 )
 
 func (t TokenType) ToString() string {
@@ -78,6 +96,40 @@ func (t TokenType) ToString() string {
 		return "STRING"
 	case TokenNumberLiteral:
 		return "NUMBER"
+	case TokenAnd:
+		return "AND"
+	case TokenClass:
+		return "CLASS"
+	case TokenElse:
+		return "ELSE"
+	case TokenFalse:
+		return "FALSE"
+	case TokenFor:
+		return "FOR"
+	case TokenFun:
+		return "FUN"
+	case TokenIf:
+		return "IF"
+	case TokenNil:
+		return "NIL"
+	case TokenOr:
+		return "OR"
+	case TokenPrint:
+		return "PRINT"
+	case TokenReturn:
+		return "RETURN"
+	case TokenSuper:
+		return "SUPER"
+	case TokenThis:
+		return "THIS"
+	case TokenTrue:
+		return "TRUE"
+	case TokenVar:
+		return "VAR"
+	case TokenWhile:
+		return "WHILE"
+	case TokenIdentifier:
+		return "IDENTIFIER"
 	default:
 		return ""
 	}

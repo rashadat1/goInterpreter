@@ -14,6 +14,25 @@ type Lexer struct {
 	Lexeme *bytes.Buffer
 }
 
+var keywords = map[string]TokenType{
+	"and":    TokenAnd,
+	"class":  TokenClass,
+	"else":   TokenElse,
+	"false":  TokenFalse,
+	"for":    TokenFor,
+	"fun":    TokenFun,
+	"if":     TokenIf,
+	"nil":    TokenNil,
+	"or":     TokenOr,
+	"print":  TokenPrint,
+	"return": TokenReturn,
+	"super":  TokenSuper,
+	"this":   TokenThis,
+	"true":   TokenTrue,
+	"var":    TokenVar,
+	"while":  TokenWhile,
+}
+
 // Emit a Token by reading the next rune from the bytes.Reader object stored in Lexer
 func (l *Lexer) NextToken() (Token, TokenError, error) {
 	r := l.Reader
@@ -370,6 +389,63 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				hasDot = true
 			}
 		}
+	case IsAlpha(c):
+		l.Lexeme.Reset()
+		_, err := l.Lexeme.WriteRune(c)
+		if err != nil {
+			return Token{}, nil, err
+		}
+		for {
+			nxt, _, err := r.ReadRune()
+			if err == io.EOF {
+				lexeme := l.Lexeme.String()
+				if tokType, ok := keywords[lexeme]; ok {
+					return Token{
+						Type:    tokType,
+						Lexeme:  lexeme,
+						Literal: "null",
+						Line:    l.Line,
+					}, nil, nil
+				}
+				return Token{
+					Type:    TokenIdentifier,
+					Lexeme:  lexeme,
+					Literal: "null",
+					Line:    l.Line,
+				}, nil, nil
+			}
+			if err != nil {
+				return Token{}, nil, err
+			}
+			if !(IsAlpha(nxt) || unicode.IsDigit(nxt)) {
+				// not a valid identifier character so unread that character
+				// and return the token built so far
+				err := r.UnreadRune()
+				if err != nil {
+					return Token{}, nil, err
+				}
+				lexeme := l.Lexeme.String()
+				if tokType, ok := keywords[lexeme]; ok {
+					return Token{
+						Type:    tokType,
+						Lexeme:  lexeme,
+						Literal: "null",
+						Line:    l.Line,
+					}, nil, nil
+				}
+				return Token{
+					Type:    TokenIdentifier,
+					Lexeme:  lexeme,
+					Literal: "null",
+					Line:    l.Line,
+				}, nil, nil
+			}
+			// if this is a valid identifier character then just write
+			_, err = l.Lexeme.WriteRune(nxt)
+			if err != nil {
+				return Token{}, nil, err
+			}
+		}
 	default:
 		uc := UnrecognizedCharError{
 			Char: string(c),
@@ -397,4 +473,7 @@ func (l *Lexer) ScanTokens() (TokenizedText, TokenErrors, error) {
 		}
 		toks = append(toks, tok)
 	}
+}
+func IsAlpha(c rune) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_')
 }
