@@ -165,11 +165,5 @@ func (tt TokenizedText) ToString() string {
 	for _, tok := range tt {
 		out += tok.TokToString()
 	}
-	eofTok := Token{
-		Type:    TokenEOF,
-		Lexeme:  "",
-		Literal: "null",
-	}
-	out += eofTok.TokToString()
 	return out
 }

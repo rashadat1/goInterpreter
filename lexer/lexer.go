@@ -70,17 +70,17 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
-	case c == ',':
-		return Token{
-			Type:    TokenComma,
-			Lexeme:  ",",
-			Literal: "null",
-			Line:    l.Line,
-		}, nil, nil
 	case c == '.':
 		return Token{
 			Type:    TokenDot,
 			Lexeme:  ".",
+			Literal: "null",
+			Line:    l.Line,
+		}, nil, nil
+	case c == ',':
+		return Token{
+			Type:    TokenComma,
+			Lexeme:  ",",
 			Literal: "null",
 			Line:    l.Line,
 		}, nil, nil
@@ -463,6 +463,12 @@ func (l *Lexer) ScanTokens() (TokenizedText, TokenErrors, error) {
 		tok, tokErr, err := l.NextToken()
 		if err != nil {
 			if err == io.EOF {
+				eofToken := Token{
+					Type:    TokenEOF,
+					Lexeme:  "",
+					Literal: "null",
+				}
+				toks = append(toks, eofToken)
 				return toks, tokErrs, nil
 			}
 			return nil, nil, err
