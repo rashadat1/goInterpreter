@@ -230,6 +230,20 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 				Line:    l.Line,
 			}, nil, nil
 		}
+	case c == ':':
+		return Token{
+			Type:    TokenColon,
+			Lexeme:  ":",
+			Literal: "null",
+			Line:    l.Line,
+		}, nil, nil
+	case c == '?':
+		return Token{
+			Type:    TokenQuestionMark,
+			Lexeme:  "?",
+			Literal: "null",
+			Line:    l.Line,
+		}, nil, nil
 	case c == ';':
 		return Token{
 			Type:    TokenSemiColon,
@@ -281,12 +295,38 @@ func (l *Lexer) NextToken() (Token, TokenError, error) {
 		}
 
 	case c == '*':
-		return Token{
-			Type:    TokenStar,
-			Lexeme:  "*",
-			Literal: "null",
-			Line:    l.Line,
-		}, nil, nil
+		cn, _, err := r.ReadRune()
+		if err == io.EOF {
+			return Token{
+				Type:    TokenStar,
+				Lexeme:  "*",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
+		if err != nil {
+			return Token{}, nil, err
+		}
+		switch cn {
+		case '*':
+			return Token{
+				Type:    TokenStarStar,
+				Lexeme:  "**",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		default:
+			err := r.UnreadRune()
+			if err != nil {
+				return Token{}, nil, err
+			}
+			return Token{
+				Type:    TokenStar,
+				Lexeme:  "*",
+				Literal: "null",
+				Line:    l.Line,
+			}, nil, nil
+		}
 	case c == '\n':
 		l.Line += 1
 		return l.NextToken()

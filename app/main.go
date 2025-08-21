@@ -32,11 +32,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Error opening file %s: %s", fileName, err)
 		os.Exit(1)
 	}
-	// pull lex initialization out to here
-	// do a runner.Lexer that emits tokens and an Error
-	// then call a pritner method that returns the runner result
-	// in the parse part of the switch run the parser after the lexer and then do astPrinter
-	// or maybe abstract printing so each method returns its own result and printing calls the correct print metho
 	if len(fileContents) > 0 {
 		r := bytes.NewReader(fileContents)
 		lex := lexer.Lexer{

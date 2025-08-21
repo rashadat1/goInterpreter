@@ -31,16 +31,16 @@ func (p *Parser) Expression() (Expr[any, string], error) {
 }
 func (p *Parser) Comma() (Expr[any, string], error) {
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenComma}) {
-		right, _ := p.Equality()
+		right, _ := p.Ternary()
 		return right, nil
 	}
-	newExpr, err := p.Equality()
+	newExpr, err := p.Ternary()
 	if err != nil {
 		return nil, err
 	}
 	for {
 		if p.Match([]lexer.TokenType{lexer.TokenComma}) {
-			rightExpr, err := p.Equality()
+			rightExpr, err := p.Ternary()
 			if err != nil {
 				return nil, err
 			}
@@ -56,6 +56,65 @@ func (p *Parser) Comma() (Expr[any, string], error) {
 }
 
 // <-- Ternary Operator goes here
+func (p *Parser) Ternary() (Expr[any, string], error) {
+	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenQuestionMark}) {
+		expr, _ := p.Expression()
+		if p.Match([]lexer.TokenType{lexer.TokenColon}) {
+			tern, _ := p.Ternary()
+			return tern, nil
+		}
+		return expr, nil
+	}
+	left, err := p.Equality()
+	if err != nil {
+		return nil, err
+	}
+	if !p.Match([]lexer.TokenType{lexer.TokenQuestionMark}) {
+		return left, nil
+	}
+	middle, err := p.Expression()
+	if err != nil {
+		return nil, err
+	}
+	if !p.Match([]lexer.TokenType{lexer.TokenColon}) {
+		parseError := ParserError{
+			Line:    p.Peek().Line,
+			Message: "Missing ':' operator in tenary expression",
+		}
+		errorMsg := parseError.Report(p.Peek())
+		log.Print(errorMsg)
+		p.HadError = true
+		return &Ternary[any, string]{
+			Left:   left,
+			Middle: middle,
+			Right:  nil,
+		}, nil
+	}
+	if p.Peek().Type == lexer.TokenEOF {
+		// reached the end of the expression - dangling semicolon
+		parseError := ParserError{
+			Line:    p.Peek().Line,
+			Message: "Missing right-hand operator in tenary expression",
+		}
+		errorMsg := parseError.Report(p.Peek())
+		log.Print(errorMsg)
+		p.HadError = true
+		return &Ternary[any, string]{
+			Left:   left,
+			Middle: middle,
+			Right:  nil,
+		}, nil
+	}
+	right, err := p.Ternary()
+	if err != nil {
+		return nil, err
+	}
+	return &Ternary[any, string]{
+		Left:   left,
+		Middle: middle,
+		Right:  right,
+	}, nil
+}
 func (p *Parser) Equality() (Expr[any, string], error) {
 	equalityOperators := []lexer.TokenType{lexer.TokenBangEqual, lexer.TokenEqualEqual}
 
@@ -149,17 +208,17 @@ func (p *Parser) Factor() (Expr[any, string], error) {
 	factorOperators := []lexer.TokenType{lexer.TokenSlash, lexer.TokenStar}
 
 	if p.MissingLeftOperand(factorOperators) {
-		right, _ := p.Unary()
+		right, _ := p.Expo()
 		return right, nil
 	}
-	newExpr, err := p.Unary()
+	newExpr, err := p.Expo()
 	if err != nil {
 		return nil, err
 	}
 	for {
 		if p.Match(factorOperators) {
 			operator := p.Previous()
-			rightExpr, err := p.Unary()
+			rightExpr, err := p.Expo()
 			if err != nil {
 				return nil, err
 			}
@@ -173,6 +232,43 @@ func (p *Parser) Factor() (Expr[any, string], error) {
 		}
 	}
 	return newExpr, nil
+}
+func (p *Parser) Expo() (Expr[any, string], error) {
+	// implementation here
+	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenStarStar}) {
+		right, _ := p.Expo()
+		return right, nil
+	}
+	left, err := p.Unary()
+	if err != nil {
+		return nil, err
+	}
+	if !p.Match([]lexer.TokenType{lexer.TokenStarStar}) {
+		return left, nil
+	}
+	if p.Peek().Type == lexer.TokenEOF {
+		parseError := ParserError{
+			Line:    p.Peek().Line,
+			Message: "Missing right-hand operand",
+		}
+		errorMsg := parseError.Report(p.Peek())
+		log.Print(errorMsg)
+		p.HadError = true
+		return &Binary[any, string]{
+			Left:     left,
+			Operator: p.Previous(),
+			Right:    nil,
+		}, nil
+	}
+	right, err := p.Expo()
+	if err != nil {
+		return nil, err
+	}
+	return &Binary[any, string]{
+		Left:     left,
+		Operator: p.Tokens[p.Position-2],
+		Right:    right,
+	}, nil
 }
 func (p *Parser) Unary() (Expr[any, string], error) {
 	unaryOperators := []lexer.TokenType{lexer.TokenBang, lexer.TokenMinus}

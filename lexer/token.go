@@ -23,6 +23,10 @@ const (
 	TokenLessEqual
 	TokenGreater
 	TokenGreaterEqual
+	TokenStarStar
+	// ternary operator symbols
+	TokenColon
+	TokenQuestionMark
 	// misc
 	TokenSlash
 	TokenStar
@@ -92,6 +96,12 @@ func (t TokenType) ToString() string {
 		return "GREATER"
 	case TokenGreaterEqual:
 		return "GREATER_EQUAL"
+	case TokenStarStar:
+		return "DOUBLE_STAR"
+	case TokenColon:
+		return "COLON"
+	case TokenQuestionMark:
+		return "QUESTION_MARK"
 	case TokenStringLiteral:
 		return "STRING"
 	case TokenNumberLiteral:

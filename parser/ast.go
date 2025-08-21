@@ -16,6 +16,7 @@ type ExprVisitor[T, V any] interface {
 	VisitGrouping(*Grouping[T, V]) V
 	VisitLiteral(*Literal[T, V]) V
 	VisitComma(*Comma[T, V]) V
+	VisitTernary(*Ternary[T, V]) V
 }
 
 type Expr[T, V any] interface {
@@ -68,6 +69,16 @@ func (c *Comma[T, V]) Accept(visitor ExprVisitor[T, V]) V {
 	return visitor.VisitComma(c)
 }
 
+type Ternary[T, V any] struct {
+	Left   Expr[T, V]
+	Middle Expr[T, V]
+	Right  Expr[T, V]
+}
+
+func (t *Ternary[T, V]) Accept(visitor ExprVisitor[T, V]) V {
+	return visitor.VisitTernary(t)
+}
+
 type AstPrinter struct{}
 
 // printer should return a string so it implementst the Expr[T=string] interface
@@ -90,7 +101,9 @@ func (astp AstPrinter) VisitUnary(un *Unary[any, string]) string {
 func (astp AstPrinter) VisitComma(c *Comma[any, string]) string {
 	return printHelper(astp, ",", c.Left, c.Right)
 }
-
+func (astp AstPrinter) VisitTernary(t *Ternary[any, string]) string {
+	return printHelper(astp, "?:", t.Left, t.Middle, t.Right)
+}
 func printHelper(astp ExprVisitor[any, string], operation string, exprArgs ...Expr[any, string]) string {
 	sb := strings.Builder{}
 	sb.WriteString("(")
