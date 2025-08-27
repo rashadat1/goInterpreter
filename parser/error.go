@@ -2,8 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"github/goInterpreter/lexer"
 	"strconv"
+
+	"github/goInterpreter/lexer"
 )
 
 type ParserError struct {

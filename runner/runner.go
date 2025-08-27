@@ -2,9 +2,10 @@ package runner
 
 import (
 	"fmt"
+	"os"
+
 	"github/goInterpreter/lexer"
 	"github/goInterpreter/parser"
-	"os"
 )
 
 type LexerResult struct {
@@ -13,7 +14,12 @@ type LexerResult struct {
 	ExitCode int
 }
 type ParserResult struct {
-	Expr     parser.Expr[any, string]
+	Expr     parser.Expr[any, interface{}]
+	Error    error
+	ExitCode int
+}
+type EvaluateResult struct {
+	Result   string
 	Error    error
 	ExitCode int
 }
@@ -29,10 +35,16 @@ func (lr *LexerResult) Print() {
 func (pr *ParserResult) Print() {
 	expr := pr.Expr
 	astp := parser.AstPrinter{}
-
-	fmt.Println(expr.Accept(astp))
+	astPrintInput := parser.TransformToStringAST(expr)
+	fmt.Println(astPrintInput.Accept(astp))
 }
-
+func (er *EvaluateResult) Print() {
+	if er.Error != nil {
+		fmt.Fprint(os.Stderr, er.Error.Error())
+	} else {
+		fmt.Print(er.Result + string('\n'))
+	}
+}
 func RunLexer(lex *lexer.Lexer) LexerResult {
 	exitCode := 0
 	toks, tokErrs, err := lex.ScanTokens()
@@ -62,4 +74,20 @@ func RunParser(tokens lexer.TokenizedText) ParserResult {
 		Expr:     expr,
 		ExitCode: exitCode,
 	}
+}
+func RunEvaluator(expr parser.Expr[any, interface{}]) EvaluateResult {
+	evaluator := parser.Interpreter{
+		HadError: false,
+	}
+	evalRes := EvaluateResult{}
+	value := evaluator.Interpret(expr)
+	switch res := value.(type) {
+	case error:
+		evalRes.Error = res
+		evalRes.ExitCode = 70
+	case string:
+		evalRes.ExitCode = 0
+		evalRes.Result = res
+	}
+	return evalRes
 }

@@ -14,7 +14,7 @@ type Parser struct {
 	HadError bool
 }
 
-func (p *Parser) Parse() Expr[any, string] {
+func (p *Parser) Parse() Expr[any, interface{}] {
 	expr, err := p.Expression()
 	if err != nil {
 		p.HadError = true
@@ -22,18 +22,19 @@ func (p *Parser) Parse() Expr[any, string] {
 	return expr
 }
 
-func (p *Parser) Expression() (Expr[any, string], error) {
+func (p *Parser) Expression() (Expr[any, interface{}], error) {
 	expr, err := p.Comma()
 	if err != nil {
 		return nil, err
 	}
 	return expr, nil
 }
-func (p *Parser) Comma() (Expr[any, string], error) {
+func (p *Parser) Comma() (Expr[any, interface{}], error) {
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenComma}) {
 		right, _ := p.Ternary()
 		return right, nil
 	}
+
 	newExpr, err := p.Ternary()
 	if err != nil {
 		return nil, err
@@ -44,7 +45,7 @@ func (p *Parser) Comma() (Expr[any, string], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Comma[any, string]{
+			newExpr = &Comma[any, interface{}]{
 				Left:  newExpr,
 				Right: rightExpr,
 			}
@@ -55,8 +56,7 @@ func (p *Parser) Comma() (Expr[any, string], error) {
 	return newExpr, nil
 }
 
-// <-- Ternary Operator goes here
-func (p *Parser) Ternary() (Expr[any, string], error) {
+func (p *Parser) Ternary() (Expr[any, interface{}], error) {
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenQuestionMark}) {
 		expr, _ := p.Expression()
 		if p.Match([]lexer.TokenType{lexer.TokenColon}) {
@@ -65,6 +65,7 @@ func (p *Parser) Ternary() (Expr[any, string], error) {
 		}
 		return expr, nil
 	}
+
 	left, err := p.Equality()
 	if err != nil {
 		return nil, err
@@ -84,7 +85,7 @@ func (p *Parser) Ternary() (Expr[any, string], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Ternary[any, string]{
+		return &Ternary[any, interface{}]{
 			Left:   left,
 			Middle: middle,
 			Right:  nil,
@@ -99,7 +100,7 @@ func (p *Parser) Ternary() (Expr[any, string], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Ternary[any, string]{
+		return &Ternary[any, interface{}]{
 			Left:   left,
 			Middle: middle,
 			Right:  nil,
@@ -109,19 +110,20 @@ func (p *Parser) Ternary() (Expr[any, string], error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Ternary[any, string]{
+	return &Ternary[any, interface{}]{
 		Left:   left,
 		Middle: middle,
 		Right:  right,
 	}, nil
 }
-func (p *Parser) Equality() (Expr[any, string], error) {
+func (p *Parser) Equality() (Expr[any, interface{}], error) {
 	equalityOperators := []lexer.TokenType{lexer.TokenBangEqual, lexer.TokenEqualEqual}
 
 	if p.MissingLeftOperand(equalityOperators) {
 		right, _ := p.Comparison()
 		return right, nil
 	}
+
 	newExpr, err := p.Comparison()
 	if err != nil {
 		return nil, err
@@ -135,7 +137,7 @@ func (p *Parser) Equality() (Expr[any, string], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, string]{
+			newExpr = &Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -146,13 +148,14 @@ func (p *Parser) Equality() (Expr[any, string], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Comparison() (Expr[any, string], error) {
+func (p *Parser) Comparison() (Expr[any, interface{}], error) {
 	compareOperators := []lexer.TokenType{lexer.TokenGreater, lexer.TokenGreaterEqual, lexer.TokenLess, lexer.TokenLessEqual}
 
 	if p.MissingLeftOperand(compareOperators) {
 		right, _ := p.Term()
 		return right, nil
 	}
+
 	newExpr, err := p.Term()
 	if err != nil {
 		return nil, err
@@ -164,7 +167,7 @@ func (p *Parser) Comparison() (Expr[any, string], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, string]{
+			newExpr = &Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -175,13 +178,14 @@ func (p *Parser) Comparison() (Expr[any, string], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Term() (Expr[any, string], error) {
+func (p *Parser) Term() (Expr[any, interface{}], error) {
 	termOperators := []lexer.TokenType{lexer.TokenPlus, lexer.TokenMinus}
 
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenPlus}) {
 		right, _ := p.Factor()
 		return right, nil
 	}
+
 	newExpr, err := p.Factor()
 	if err != nil {
 		return nil, err
@@ -193,7 +197,7 @@ func (p *Parser) Term() (Expr[any, string], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, string]{
+			newExpr = &Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -204,13 +208,14 @@ func (p *Parser) Term() (Expr[any, string], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Factor() (Expr[any, string], error) {
+func (p *Parser) Factor() (Expr[any, interface{}], error) {
 	factorOperators := []lexer.TokenType{lexer.TokenSlash, lexer.TokenStar}
 
 	if p.MissingLeftOperand(factorOperators) {
 		right, _ := p.Expo()
 		return right, nil
 	}
+
 	newExpr, err := p.Expo()
 	if err != nil {
 		return nil, err
@@ -222,7 +227,7 @@ func (p *Parser) Factor() (Expr[any, string], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, string]{
+			newExpr = &Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -233,12 +238,13 @@ func (p *Parser) Factor() (Expr[any, string], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Expo() (Expr[any, string], error) {
+func (p *Parser) Expo() (Expr[any, interface{}], error) {
 	// implementation here
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenStarStar}) {
 		right, _ := p.Expo()
 		return right, nil
 	}
+
 	left, err := p.Unary()
 	if err != nil {
 		return nil, err
@@ -254,7 +260,7 @@ func (p *Parser) Expo() (Expr[any, string], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Binary[any, string]{
+		return &Binary[any, interface{}]{
 			Left:     left,
 			Operator: p.Previous(),
 			Right:    nil,
@@ -264,13 +270,13 @@ func (p *Parser) Expo() (Expr[any, string], error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Binary[any, string]{
+	return &Binary[any, interface{}]{
 		Left:     left,
 		Operator: p.Tokens[p.Position-2],
 		Right:    right,
 	}, nil
 }
-func (p *Parser) Unary() (Expr[any, string], error) {
+func (p *Parser) Unary() (Expr[any, interface{}], error) {
 	unaryOperators := []lexer.TokenType{lexer.TokenBang, lexer.TokenMinus}
 
 	if p.Match(unaryOperators) {
@@ -279,14 +285,15 @@ func (p *Parser) Unary() (Expr[any, string], error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Unary[any, string]{
+		return &Unary[any, interface{}]{
 			Operator: operator,
 			Right:    expr,
 		}, nil
 	}
 	return p.Primary()
 }
-func (p *Parser) Primary() (Expr[any, string], error) {
+func (p *Parser) Primary() (Expr[any, interface{}], error) {
+
 	if p.Match([]lexer.TokenType{lexer.TokenLeftParen}) {
 		// after matching an open parentheses we parse the expression inside of it
 		// and log an error if the expression is not followed by a closing parentheses
@@ -298,33 +305,35 @@ func (p *Parser) Primary() (Expr[any, string], error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Grouping[any, string]{
+		return &Grouping[any, interface{}]{
 			Expression: expr,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenTrue}) {
-		return &Literal[any, string]{
+		return &Literal[any, interface{}]{
 			Value: true,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenFalse}) {
-		return &Literal[any, string]{
+		return &Literal[any, interface{}]{
 			Value: false,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenNil}) {
-		return &Literal[any, string]{
-			Value: nil,
+		return &Literal[any, interface{}]{
+			Value: "nil",
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenStringLiteral}) {
-		return &Literal[any, string]{
+		return &Literal[any, interface{}]{
 			Value: p.Previous().Literal,
+			Type:  "string",
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenNumberLiteral}) {
-		return &Literal[any, string]{
+		return &Literal[any, interface{}]{
 			Value: p.Previous().Literal,
+			Type:  "number",
 		}, nil
 	}
 	parseError := ParserError{

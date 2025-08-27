@@ -2,8 +2,9 @@ package parser
 
 import (
 	"fmt"
-	"github/goInterpreter/lexer"
 	"strings"
+
+	"github/goInterpreter/lexer"
 )
 
 // generic Expr[T] with generic Accept method
@@ -54,6 +55,7 @@ func (gr *Grouping[T, V]) Accept(visitor ExprVisitor[T, V]) V {
 
 type Literal[T, V any] struct {
 	Value T
+	Type  string
 }
 
 func (l *Literal[T, V]) Accept(visitor ExprVisitor[T, V]) V {
