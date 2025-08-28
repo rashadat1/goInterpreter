@@ -1,36 +1,39 @@
 package parser
 
-import "fmt"
+import (
+	"fmt"
+	"github/goInterpreter/parser/exprVisitors"
+)
 
-func TransformToStringAST(expr Expr[any, interface{}]) Expr[any, string] {
+func TransformToStringAST(expr exprVisitors.Expr[any, interface{}]) exprVisitors.Expr[any, string] {
 	switch e := expr.(type) {
-	case *Binary[any, interface{}]:
-		return &Binary[any, string]{
+	case *exprVisitors.Binary[any, interface{}]:
+		return &exprVisitors.Binary[any, string]{
 			Left:     TransformToStringAST(e.Left),
 			Operator: e.Operator,
 			Right:    TransformToStringAST(e.Right),
 		}
-	case *Unary[any, interface{}]:
-		return &Unary[any, string]{
+	case *exprVisitors.Unary[any, interface{}]:
+		return &exprVisitors.Unary[any, string]{
 			Operator: e.Operator,
 			Right:    TransformToStringAST(e.Right),
 		}
-	case *Grouping[any, interface{}]:
-		return &Grouping[any, string]{
+	case *exprVisitors.Grouping[any, interface{}]:
+		return &exprVisitors.Grouping[any, string]{
 			Expression: TransformToStringAST(e.Expression),
 		}
-	case *Literal[any, interface{}]:
-		return &Literal[any, string]{
+	case *exprVisitors.Literal[any, interface{}]:
+		return &exprVisitors.Literal[any, string]{
 			Value: fmt.Sprintf("%v", e.Value),
 			Type:  e.Type,
 		}
-	case *Comma[any, interface{}]:
-		return &Comma[any, string]{
+	case *exprVisitors.Comma[any, interface{}]:
+		return &exprVisitors.Comma[any, string]{
 			Left:  TransformToStringAST(e.Left),
 			Right: TransformToStringAST(e.Right),
 		}
-	case *Ternary[any, interface{}]:
-		return &Ternary[any, string]{
+	case *exprVisitors.Ternary[any, interface{}]:
+		return &exprVisitors.Ternary[any, string]{
 			Left:   TransformToStringAST(e.Left),
 			Middle: TransformToStringAST(e.Middle),
 			Right:  TransformToStringAST(e.Right),

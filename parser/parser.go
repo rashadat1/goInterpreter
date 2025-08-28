@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github/goInterpreter/lexer"
+	"github/goInterpreter/parser/exprVisitors"
 )
 
 type Parser struct {
@@ -14,7 +15,7 @@ type Parser struct {
 	HadError bool
 }
 
-func (p *Parser) Parse() Expr[any, interface{}] {
+func (p *Parser) Parse() exprVisitors.Expr[any, interface{}] {
 	expr, err := p.Expression()
 	if err != nil {
 		p.HadError = true
@@ -22,14 +23,14 @@ func (p *Parser) Parse() Expr[any, interface{}] {
 	return expr
 }
 
-func (p *Parser) Expression() (Expr[any, interface{}], error) {
+func (p *Parser) Expression() (exprVisitors.Expr[any, interface{}], error) {
 	expr, err := p.Comma()
 	if err != nil {
 		return nil, err
 	}
 	return expr, nil
 }
-func (p *Parser) Comma() (Expr[any, interface{}], error) {
+func (p *Parser) Comma() (exprVisitors.Expr[any, interface{}], error) {
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenComma}) {
 		right, _ := p.Ternary()
 		return right, nil
@@ -45,7 +46,7 @@ func (p *Parser) Comma() (Expr[any, interface{}], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Comma[any, interface{}]{
+			newExpr = &exprVisitors.Comma[any, interface{}]{
 				Left:  newExpr,
 				Right: rightExpr,
 			}
@@ -56,7 +57,7 @@ func (p *Parser) Comma() (Expr[any, interface{}], error) {
 	return newExpr, nil
 }
 
-func (p *Parser) Ternary() (Expr[any, interface{}], error) {
+func (p *Parser) Ternary() (exprVisitors.Expr[any, interface{}], error) {
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenQuestionMark}) {
 		expr, _ := p.Expression()
 		if p.Match([]lexer.TokenType{lexer.TokenColon}) {
@@ -85,7 +86,7 @@ func (p *Parser) Ternary() (Expr[any, interface{}], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Ternary[any, interface{}]{
+		return &exprVisitors.Ternary[any, interface{}]{
 			Left:   left,
 			Middle: middle,
 			Right:  nil,
@@ -100,7 +101,7 @@ func (p *Parser) Ternary() (Expr[any, interface{}], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Ternary[any, interface{}]{
+		return &exprVisitors.Ternary[any, interface{}]{
 			Left:   left,
 			Middle: middle,
 			Right:  nil,
@@ -110,13 +111,13 @@ func (p *Parser) Ternary() (Expr[any, interface{}], error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Ternary[any, interface{}]{
+	return &exprVisitors.Ternary[any, interface{}]{
 		Left:   left,
 		Middle: middle,
 		Right:  right,
 	}, nil
 }
-func (p *Parser) Equality() (Expr[any, interface{}], error) {
+func (p *Parser) Equality() (exprVisitors.Expr[any, interface{}], error) {
 	equalityOperators := []lexer.TokenType{lexer.TokenBangEqual, lexer.TokenEqualEqual}
 
 	if p.MissingLeftOperand(equalityOperators) {
@@ -137,7 +138,7 @@ func (p *Parser) Equality() (Expr[any, interface{}], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, interface{}]{
+			newExpr = &exprVisitors.Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -148,7 +149,7 @@ func (p *Parser) Equality() (Expr[any, interface{}], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Comparison() (Expr[any, interface{}], error) {
+func (p *Parser) Comparison() (exprVisitors.Expr[any, interface{}], error) {
 	compareOperators := []lexer.TokenType{lexer.TokenGreater, lexer.TokenGreaterEqual, lexer.TokenLess, lexer.TokenLessEqual}
 
 	if p.MissingLeftOperand(compareOperators) {
@@ -167,7 +168,7 @@ func (p *Parser) Comparison() (Expr[any, interface{}], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, interface{}]{
+			newExpr = &exprVisitors.Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -178,7 +179,7 @@ func (p *Parser) Comparison() (Expr[any, interface{}], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Term() (Expr[any, interface{}], error) {
+func (p *Parser) Term() (exprVisitors.Expr[any, interface{}], error) {
 	termOperators := []lexer.TokenType{lexer.TokenPlus, lexer.TokenMinus}
 
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenPlus}) {
@@ -197,7 +198,7 @@ func (p *Parser) Term() (Expr[any, interface{}], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, interface{}]{
+			newExpr = &exprVisitors.Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -208,7 +209,7 @@ func (p *Parser) Term() (Expr[any, interface{}], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Factor() (Expr[any, interface{}], error) {
+func (p *Parser) Factor() (exprVisitors.Expr[any, interface{}], error) {
 	factorOperators := []lexer.TokenType{lexer.TokenSlash, lexer.TokenStar}
 
 	if p.MissingLeftOperand(factorOperators) {
@@ -227,7 +228,7 @@ func (p *Parser) Factor() (Expr[any, interface{}], error) {
 			if err != nil {
 				return nil, err
 			}
-			newExpr = &Binary[any, interface{}]{
+			newExpr = &exprVisitors.Binary[any, interface{}]{
 				Left:     newExpr,
 				Operator: operator,
 				Right:    rightExpr,
@@ -238,7 +239,7 @@ func (p *Parser) Factor() (Expr[any, interface{}], error) {
 	}
 	return newExpr, nil
 }
-func (p *Parser) Expo() (Expr[any, interface{}], error) {
+func (p *Parser) Expo() (exprVisitors.Expr[any, interface{}], error) {
 	// implementation here
 	if p.MissingLeftOperand([]lexer.TokenType{lexer.TokenStarStar}) {
 		right, _ := p.Expo()
@@ -260,7 +261,7 @@ func (p *Parser) Expo() (Expr[any, interface{}], error) {
 		errorMsg := parseError.Report(p.Peek())
 		log.Print(errorMsg)
 		p.HadError = true
-		return &Binary[any, interface{}]{
+		return &exprVisitors.Binary[any, interface{}]{
 			Left:     left,
 			Operator: p.Previous(),
 			Right:    nil,
@@ -270,13 +271,13 @@ func (p *Parser) Expo() (Expr[any, interface{}], error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Binary[any, interface{}]{
+	return &exprVisitors.Binary[any, interface{}]{
 		Left:     left,
 		Operator: p.Tokens[p.Position-2],
 		Right:    right,
 	}, nil
 }
-func (p *Parser) Unary() (Expr[any, interface{}], error) {
+func (p *Parser) Unary() (exprVisitors.Expr[any, interface{}], error) {
 	unaryOperators := []lexer.TokenType{lexer.TokenBang, lexer.TokenMinus}
 
 	if p.Match(unaryOperators) {
@@ -285,14 +286,14 @@ func (p *Parser) Unary() (Expr[any, interface{}], error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Unary[any, interface{}]{
+		return &exprVisitors.Unary[any, interface{}]{
 			Operator: operator,
 			Right:    expr,
 		}, nil
 	}
 	return p.Primary()
 }
-func (p *Parser) Primary() (Expr[any, interface{}], error) {
+func (p *Parser) Primary() (exprVisitors.Expr[any, interface{}], error) {
 
 	if p.Match([]lexer.TokenType{lexer.TokenLeftParen}) {
 		// after matching an open parentheses we parse the expression inside of it
@@ -305,33 +306,33 @@ func (p *Parser) Primary() (Expr[any, interface{}], error) {
 		if err != nil {
 			return nil, err
 		}
-		return &Grouping[any, interface{}]{
+		return &exprVisitors.Grouping[any, interface{}]{
 			Expression: expr,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenTrue}) {
-		return &Literal[any, interface{}]{
+		return &exprVisitors.Literal[any, interface{}]{
 			Value: true,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenFalse}) {
-		return &Literal[any, interface{}]{
+		return &exprVisitors.Literal[any, interface{}]{
 			Value: false,
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenNil}) {
-		return &Literal[any, interface{}]{
+		return &exprVisitors.Literal[any, interface{}]{
 			Value: "nil",
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenStringLiteral}) {
-		return &Literal[any, interface{}]{
+		return &exprVisitors.Literal[any, interface{}]{
 			Value: p.Previous().Literal,
 			Type:  "string",
 		}, nil
 	}
 	if p.Match([]lexer.TokenType{lexer.TokenNumberLiteral}) {
-		return &Literal[any, interface{}]{
+		return &exprVisitors.Literal[any, interface{}]{
 			Value: p.Previous().Literal,
 			Type:  "number",
 		}, nil

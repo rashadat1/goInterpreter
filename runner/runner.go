@@ -6,6 +6,7 @@ import (
 
 	"github/goInterpreter/lexer"
 	"github/goInterpreter/parser"
+	"github/goInterpreter/parser/exprVisitors"
 )
 
 type LexerResult struct {
@@ -14,7 +15,7 @@ type LexerResult struct {
 	ExitCode int
 }
 type ParserResult struct {
-	Expr     parser.Expr[any, interface{}]
+	Expr     exprVisitors.Expr[any, interface{}]
 	Error    error
 	ExitCode int
 }
@@ -34,7 +35,7 @@ func (lr *LexerResult) Print() {
 }
 func (pr *ParserResult) Print() {
 	expr := pr.Expr
-	astp := parser.AstPrinter{}
+	astp := exprVisitors.AstPrinter{}
 	astPrintInput := parser.TransformToStringAST(expr)
 	fmt.Println(astPrintInput.Accept(astp))
 }
@@ -75,8 +76,8 @@ func RunParser(tokens lexer.TokenizedText) ParserResult {
 		ExitCode: exitCode,
 	}
 }
-func RunEvaluator(expr parser.Expr[any, interface{}]) EvaluateResult {
-	evaluator := parser.Interpreter{
+func RunEvaluator(expr exprVisitors.Expr[any, interface{}]) EvaluateResult {
+	evaluator := exprVisitors.Interpreter{
 		HadError: false,
 	}
 	evalRes := EvaluateResult{}
